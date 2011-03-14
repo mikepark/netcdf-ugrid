@@ -19,8 +19,9 @@ typedef struct ElemStruct ElemStruct;
 typedef ElemStruct * Elem;
 
 struct ElemStruct {
-  int elements;
-  int nodes_per_element;
+  int dims;
+  int *dim;
+  int total;
   int *e2n;
 };
 
@@ -29,6 +30,7 @@ int elem_create_from( Elem elem, int nc_handle, char *variable_name )
   int var_handle;
   int var_ndim;
   int var_dimids[NC_MAX_VAR_DIMS];
+  int i;
 
   int dim_handle;
   size_t dim_length;
@@ -37,19 +39,20 @@ int elem_create_from( Elem elem, int nc_handle, char *variable_name )
   nc_try( nc_inq_varid(nc_handle, variable_name, &var_handle) );
   nc_try( nc_inq_varndims(nc_handle, var_handle, &var_ndim) );
   printf("dims %d\n",var_ndim);
+  elem->dims = var_ndim;
+
   nc_try( nc_inq_vardimid(nc_handle, var_handle, &var_dimids[0] ) );
-
-  nc_try( nc_inq_dim(nc_handle, var_dimids[0], &dim_name[0], &dim_length) );
-  printf("%s = %d\n",dim_name,(int)dim_length);
-  elem->elements = (int)dim_length;
-
-  nc_try( nc_inq_dim(nc_handle, var_dimids[1], &dim_name[1], &dim_length) );
-  printf("%s = %d\n",dim_name,(int)dim_length);
-  elem->nodes_per_element = (int)dim_length;
-
-  elem->e2n = (int *) malloc( (elem->elements) * 
-			      (elem->nodes_per_element) * 
-			      sizeof(int) );
+  elem->dim = (int *) malloc( elem->dims * sizeof(int) );
+  elem->total = 1;
+  for ( i = 0 ; i < elem->dims ; i++ )
+    {
+      nc_try( nc_inq_dim(nc_handle, var_dimids[i], &dim_name[0], &dim_length) );
+      printf("%s = %d\n",dim_name,(int)dim_length);
+      elem->dim[i] = (int)dim_length;
+      elem->total = elem->total * elem->dim[i];
+    }
+  printf("total = %d\n",elem->total);
+  elem->e2n = (int *) malloc( (elem->total) * sizeof(int) );
 
   nc_try( nc_get_var_int(nc_handle, var_handle, elem->e2n ) );
 
@@ -60,7 +63,6 @@ int main( int argc, char *argv[] )
 {
   int nc_handle;
   Elem hexes;
-  int i;
 
   if ( argc < 2 ) 
     {
@@ -72,10 +74,6 @@ int main( int argc, char *argv[] )
 
   hexes = (Elem)malloc(sizeof(ElemStruct));
   nc_try( elem_create_from( hexes, nc_handle, "points_of_hexaeders" ) );
-
-  for (i = 0; i < 8; i++)
-    printf(" %d",hexes->e2n[i]);
-  printf("\n");
 
   nc_try( nc_close(nc_handle) );
 
