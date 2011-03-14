@@ -36,6 +36,8 @@ int elem_create_from( Elem elem, int nc_handle, char *variable_name )
   size_t dim_length;
   char dim_name[NC_MAX_NAME+1];
 
+  printf("%s:\n",variable_name);
+
   nc_try( nc_inq_varid(nc_handle, variable_name, &var_handle) );
   nc_try( nc_inq_varndims(nc_handle, var_handle, &var_ndim) );
   printf("dims %d\n",var_ndim);
@@ -63,6 +65,8 @@ int main( int argc, char *argv[] )
 {
   int nc_handle;
   Elem hexes;
+  Elem quads;
+  Elem quadids;
 
   if ( argc < 2 ) 
     {
@@ -74,6 +78,12 @@ int main( int argc, char *argv[] )
 
   hexes = (Elem)malloc(sizeof(ElemStruct));
   nc_try( elem_create_from( hexes, nc_handle, "points_of_hexaeders" ) );
+
+  quads = (Elem)malloc(sizeof(ElemStruct));
+  nc_try( elem_create_from( quads, nc_handle, "points_of_surfacequadrilaterals" ) );
+
+  quadids = (Elem)malloc(sizeof(ElemStruct));
+  nc_try( elem_create_from( quadids, nc_handle, "boundarymarker_of_surfaces" ) );
 
   nc_try( nc_close(nc_handle) );
 
