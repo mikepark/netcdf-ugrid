@@ -22,7 +22,8 @@ int main( int argc, char *argv[] )
   size_t dim_length;
 
   int var_handle;
-
+  int var_ndim;
+  int var_dimids[NC_MAX_VAR_DIMS];
 
   int nhex;
   int nodes_per_hex;
@@ -48,9 +49,13 @@ int main( int argc, char *argv[] )
 
   printf("nodes_per_hex %d\n",nodes_per_hex);
 
-
   hexes = (int *) malloc( nhex*nodes_per_hex*sizeof(int) );
   nc_try( nc_inq_varid(nc_handle, "points_of_hexaeders", &var_handle) );
+  nc_try( nc_inq_varndims(nc_handle, var_handle, &var_ndim) );
+  printf("dims %d\n",var_ndim);
+  nc_try( nc_inq_vardimid(nc_handle, var_handle, &var_dimids[0] ) );
+  printf("var_dims %d %d\n",var_dimids[0],var_dimids[1]);
+
   nc_try( nc_get_var_int(nc_handle, var_handle, hexes) );
 
   for (i = 0; i < 8; i++)
