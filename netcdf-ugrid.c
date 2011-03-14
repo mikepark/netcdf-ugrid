@@ -44,5 +44,7 @@ int main( int argc, char *argv[] )
 
   printf("nodes_per_hex %d\n",nodes_per_hex);
 
+  nc_try( nc_close(nc_handle) );
+
   return 0;
 }
