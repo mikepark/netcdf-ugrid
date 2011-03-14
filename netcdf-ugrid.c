@@ -21,9 +21,13 @@ int main( int argc, char *argv[] )
   int dim_handle;
   size_t dim_length;
 
+  int var_handle;
+
+
   int nhex;
   int nodes_per_hex;
-
+  int *hexes;
+  int i;
   if ( argc < 2 ) 
     {
       printf("usage: %s my-netcfd-grid-filename\n",argv[0]);
@@ -43,6 +47,17 @@ int main( int argc, char *argv[] )
   nodes_per_hex = (int)dim_length;
 
   printf("nodes_per_hex %d\n",nodes_per_hex);
+
+
+  hexes = (int *) malloc( nhex*nodes_per_hex*sizeof(int) );
+  nc_try( nc_inq_varid(nc_handle, "points_of_hexaeders", &var_handle) );
+  nc_try( nc_get_var_int(nc_handle, var_handle, hexes) );
+
+  for (i = 0; i < 8; i++)
+    {
+      printf(" %d",hexes[i]);
+    }
+      printf("\n");
 
   nc_try( nc_close(nc_handle) );
 
