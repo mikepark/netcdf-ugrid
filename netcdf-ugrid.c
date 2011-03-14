@@ -9,7 +9,8 @@
     code = (fcn);						\
     if ( code )							\
       {								\
-	printf("netcdf error: %s\n", nc_strerror(code));	\
+        printf("%s: %d: %s: netcdf error: %s\n",		\
+	       __FILE__,__LINE__,__func__,nc_strerror(code));	\
 	exit(code);						\
       }								\
   }
