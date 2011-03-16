@@ -96,6 +96,55 @@ int translate_nodes( int nc, FILE *ugrid )
   return 0;
 }
 
+int translate_ints( int nc, char *variable_name, FILE *ugrid )
+{
+  int var;
+  int var_ndim;
+  int var_dims[NC_MAX_VAR_DIMS];
+  int i;
+
+  size_t dim_length;
+  char dim_name[NC_MAX_NAME+1];
+
+  int element, elements;
+  int node, nodes_per;
+  int element_node;
+
+  size_t index[NC_MAX_VAR_DIMS];
+
+  nc_try( nc_inq_varid(nc, variable_name, &var) );
+  
+  nc_try( nc_inq_varndims(nc, var, &var_ndim) );
+  nc_try( nc_inq_vardimid(nc, var, &var_dims[0] ) );
+
+  nc_try( nc_inq_dim(nc, var_dims[0], &dim_name[0], &dim_length) );
+  printf(" %s = %d\n",dim_name,(int)dim_length);
+  elements = (int)dim_length;
+
+  nodes_per = 1;
+  if ( var_ndim > 1 )
+    {
+      nc_try( nc_inq_dim(nc, var_dims[1], &dim_name[0], &dim_length) );
+      printf(" %s = %d\n",dim_name,(int)dim_length);
+      nodes_per = (int)dim_length;
+    }
+
+  for ( element = 0; element < elements ; element++ )
+    {
+      index[0] = element;
+      for ( node = 0 ; node < nodes_per ; node++ )
+	{
+	  index[1] = node;
+	  nc_try( nc_get_var1_int(nc, var, index, &element_node) );
+	  if ( nodes_per > 1 ) element_node++;
+	  fprintf(ugrid, " %d", element_node );
+	}
+      fprintf(ugrid, "\n" );
+    }
+
+  return 0;
+}
+
 int main( int argc, char *argv[] )
 {
   int nc;
@@ -124,6 +173,10 @@ int main( int argc, char *argv[] )
   fprintf(ugrid, "\n");
 
   nc_try( translate_nodes( nc, ugrid ) );
+
+  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
+  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
 
   fclose( ugrid );
 
