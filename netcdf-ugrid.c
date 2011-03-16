@@ -16,7 +16,7 @@
       }								\
   }
 
-int translate_variable_dimension( int nc, char *variable_name )
+int translate_variable_dimension( int nc, char *variable_name, FILE *ugrid )
 {
   int var;
   int var_ndim;
@@ -49,6 +49,8 @@ int translate_variable_dimension( int nc, char *variable_name )
       length = (int)dim_length;
     }
 
+  fprintf(ugrid, " %d", length );
+
   //  nc_try( nc_get_var_int(nc, var, elem->e2n ) );
 
   return 0;
@@ -57,6 +59,7 @@ int translate_variable_dimension( int nc, char *variable_name )
 int main( int argc, char *argv[] )
 {
   int nc;
+  FILE *ugrid;
 
   if ( argc < 2 ) 
     {
@@ -66,15 +69,21 @@ int main( int argc, char *argv[] )
 
   nc_try( nc_open(argv[1], NC_NOWRITE, &nc) );
 
-  nc_try( translate_variable_dimension( nc, "points_nc" ) );
-  
-  nc_try( translate_variable_dimension( nc, "tris" ) );
-  nc_try( translate_variable_dimension( nc, "points_of_surfacequadrilaterals" ) );
+  ugrid = fopen("netcdf.ugrid","w");
 
-  nc_try( translate_variable_dimension( nc, "tets" ) );
-  nc_try( translate_variable_dimension( nc, "pyramids" ) );
-  nc_try( translate_variable_dimension( nc, "prisms" ) );
-  nc_try( translate_variable_dimension( nc, "points_of_hexaeders" ) );
+  nc_try( translate_variable_dimension( nc, "points_nc", ugrid ) );
+  
+  nc_try( translate_variable_dimension( nc, "tris", ugrid ) );
+  nc_try( translate_variable_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
+
+  nc_try( translate_variable_dimension( nc, "tets", ugrid ) );
+  nc_try( translate_variable_dimension( nc, "pyramids", ugrid ) );
+  nc_try( translate_variable_dimension( nc, "prisms", ugrid ) );
+  nc_try( translate_variable_dimension( nc, "points_of_hexaeders", ugrid ) );
+
+  fprintf(ugrid, "\n");
+
+  fclose( ugrid );
 
   nc_try( nc_close(nc) );
 
