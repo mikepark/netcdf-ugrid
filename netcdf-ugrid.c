@@ -160,7 +160,7 @@ int main( int argc, char *argv[] )
 
   ugrid = fopen("netcdf.ugrid","w");
 
-  nc_try( translate_dimension( nc, "points_nc", ugrid ) );
+  nc_try( translate_dimension( nc, "points_xc", ugrid ) );
   
   nc_try( translate_dimension( nc, "tris", ugrid ) );
   nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
