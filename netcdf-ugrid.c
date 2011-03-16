@@ -12,7 +12,7 @@
         printf("%s: %d: %s: netcdf error: %s (%d)\n",			\
 	       __FILE__,__LINE__,__func__,nc_strerror(try_code),	\
 	       try_code);						\
-	exit(try_code);							\
+	return(try_code);						\
       }									\
   }
 
@@ -112,8 +112,16 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
   size_t index[NC_MAX_VAR_DIMS];
 
-  nc_try( nc_inq_varid(nc, variable_name, &var) );
-  
+  int code;
+
+  code = nc_inq_varid(nc, variable_name, &var);
+  if ( -49 == code )
+    {
+      printf("%s:\n not in netcfd file\n",variable_name);
+      return 0;
+    }
+  nc_try(code);
+
   nc_try( nc_inq_varndims(nc, var, &var_ndim) );
   nc_try( nc_inq_vardimid(nc, var, &var_dims[0] ) );
 
@@ -162,20 +170,24 @@ int main( int argc, char *argv[] )
 
   nc_try( translate_dimension( nc, "points_xc", ugrid ) );
   
-  nc_try( translate_dimension( nc, "tris", ugrid ) );
+  nc_try( translate_dimension( nc, "points_per_surfacetriangles", ugrid ) );
   nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
 
-  nc_try( translate_dimension( nc, "tets", ugrid ) );
-  nc_try( translate_dimension( nc, "pyramids", ugrid ) );
-  nc_try( translate_dimension( nc, "prisms", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_tetraeders", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_pyramids", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_prisms", ugrid ) );
   nc_try( translate_dimension( nc, "points_of_hexaeders", ugrid ) );
 
   fprintf(ugrid, "\n");
 
   nc_try( translate_nodes( nc, ugrid ) );
 
+  nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
   nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
   nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_tetraeders", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_pyramids", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_prisms", ugrid ) );
   nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
 
   fclose( ugrid );
