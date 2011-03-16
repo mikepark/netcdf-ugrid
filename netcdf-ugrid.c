@@ -71,9 +71,9 @@ int translate_nodes( int nc, FILE *ugrid )
   size_t index[NC_MAX_VAR_DIMS];
   double x,y,z;
 
-  nc_try( nc_inq_varid(nc, "points_xc", var_x) );
-  nc_try( nc_inq_varid(nc, "points_yc", var_y) );
-  nc_try( nc_inq_varid(nc, "points_zc", var_z) );
+  nc_try( nc_inq_varid(nc, "points_xc", &var_x) );
+  nc_try( nc_inq_varid(nc, "points_yc", &var_y) );
+  nc_try( nc_inq_varid(nc, "points_zc", &var_z) );
   
   nc_try( nc_inq_varndims(nc, var_x, &var_ndim) );
   nc_try( nc_inq_vardimid(nc, var_x, &var_dims[0] ) );
@@ -84,9 +84,9 @@ int translate_nodes( int nc, FILE *ugrid )
   for ( node = 0; node < nnodes ; node++ )
     {
       index[0] = node;
-      nc_try( nc_get_var1_double(nc, var_x, &index[0], &x) );
-      nc_try( nc_get_var1_double(nc, var_x, &index[0], &y) );
-      nc_try( nc_get_var1_double(nc, var_x, &index[0], &z) );
+      nc_try( nc_get_var1_double(nc, var_x, index, &x) );
+      nc_try( nc_get_var1_double(nc, var_y, index, &y) );
+      nc_try( nc_get_var1_double(nc, var_z, index, &z) );
       fprintf(ugrid, " %25.15e", x );
       fprintf(ugrid, " %25.15e", y );
       fprintf(ugrid, " %25.15e", z );
@@ -122,6 +122,8 @@ int main( int argc, char *argv[] )
   nc_try( translate_dimension( nc, "points_of_hexaeders", ugrid ) );
 
   fprintf(ugrid, "\n");
+
+  nc_try( translate_nodes( nc, ugrid ) );
 
   fclose( ugrid );
 

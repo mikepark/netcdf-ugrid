@@ -4,3 +4,5 @@ netcdf-ugrid: netcdf-ugrid.c
 
 clean:
 	rm -rf netcdf-ugrid
+	rm -rf *.dSYM
+
