@@ -9,64 +9,54 @@
     code = (fcn);						\
     if ( code )							\
       {								\
-        printf("%s: %d: %s: netcdf error: %s\n",		\
-	       __FILE__,__LINE__,__func__,nc_strerror(code));	\
+        printf("%s: %d: %s: netcdf error: %s (%d)\n",		\
+	       __FILE__,__LINE__,__func__,nc_strerror(code),    \
+	       code);						\
 	exit(code);						\
       }								\
   }
 
-typedef struct ElemStruct ElemStruct;
-typedef ElemStruct * Elem;
-
-struct ElemStruct {
-  int dims;
-  int *dim;
-  int total;
-  int *e2n;
-};
-
-int elem_create_from( Elem elem, int nc_handle, char *variable_name )
+int translate_variable_dimension( int nc, char *variable_name )
 {
-  int var_handle;
+  int var;
   int var_ndim;
-  int var_dimids[NC_MAX_VAR_DIMS];
+  int var_dims[NC_MAX_VAR_DIMS];
   int i;
 
-  int dim_handle;
   size_t dim_length;
   char dim_name[NC_MAX_NAME+1];
 
+  int length;
+
+  int code;
+
   printf("%s:\n",variable_name);
 
-  nc_try( nc_inq_varid(nc_handle, variable_name, &var_handle) );
-  nc_try( nc_inq_varndims(nc_handle, var_handle, &var_ndim) );
-  printf("dims %d\n",var_ndim);
-  elem->dims = var_ndim;
-
-  nc_try( nc_inq_vardimid(nc_handle, var_handle, &var_dimids[0] ) );
-  elem->dim = (int *) malloc( elem->dims * sizeof(int) );
-  elem->total = 1;
-  for ( i = 0 ; i < elem->dims ; i++ )
+  code = nc_inq_varid(nc, variable_name, &var);
+  if ( -49 == code )
     {
-      nc_try( nc_inq_dim(nc_handle, var_dimids[i], &dim_name[0], &dim_length) );
-      printf("%s = %d\n",dim_name,(int)dim_length);
-      elem->dim[i] = (int)dim_length;
-      elem->total = elem->total * elem->dim[i];
+      printf(" not in netcfd file\n");
+      length = 0;
     }
-  printf("total = %d\n",elem->total);
-  elem->e2n = (int *) malloc( (elem->total) * sizeof(int) );
+  else
+    {
+      nc_try( code );
+      nc_try( nc_inq_varndims(nc, var, &var_ndim) );
 
-  nc_try( nc_get_var_int(nc_handle, var_handle, elem->e2n ) );
+      nc_try( nc_inq_vardimid(nc, var, &var_dims[0] ) );
+      nc_try( nc_inq_dim(nc, var_dims[0], &dim_name[0], &dim_length) );
+      printf(" %s = %d\n",dim_name,(int)dim_length);
+      length = (int)dim_length;
+    }
+
+  //  nc_try( nc_get_var_int(nc, var, elem->e2n ) );
 
   return 0;
 }
 
 int main( int argc, char *argv[] )
 {
-  int nc_handle;
-  Elem hexes;
-  Elem quads;
-  Elem quadids;
+  int nc;
 
   if ( argc < 2 ) 
     {
@@ -74,18 +64,19 @@ int main( int argc, char *argv[] )
       return 1;
     }
 
-  nc_try( nc_open(argv[1], NC_NOWRITE, &nc_handle) );
+  nc_try( nc_open(argv[1], NC_NOWRITE, &nc) );
 
-  hexes = (Elem)malloc(sizeof(ElemStruct));
-  nc_try( elem_create_from( hexes, nc_handle, "points_of_hexaeders" ) );
+  nc_try( translate_variable_dimension( nc, "points_nc" ) );
+  
+  nc_try( translate_variable_dimension( nc, "tris" ) );
+  nc_try( translate_variable_dimension( nc, "points_of_surfacequadrilaterals" ) );
 
-  quads = (Elem)malloc(sizeof(ElemStruct));
-  nc_try( elem_create_from( quads, nc_handle, "points_of_surfacequadrilaterals" ) );
+  nc_try( translate_variable_dimension( nc, "tets" ) );
+  nc_try( translate_variable_dimension( nc, "pyramids" ) );
+  nc_try( translate_variable_dimension( nc, "prisms" ) );
+  nc_try( translate_variable_dimension( nc, "points_of_hexaeders" ) );
 
-  quadids = (Elem)malloc(sizeof(ElemStruct));
-  nc_try( elem_create_from( quadids, nc_handle, "boundarymarker_of_surfaces" ) );
-
-  nc_try( nc_close(nc_handle) );
+  nc_try( nc_close(nc) );
 
   return 0;
 }
