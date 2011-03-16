@@ -1,6 +1,10 @@
 
 % netcdf-ugrid my-netcfd-grid-filename
 
+docs,
+http://www.simcenter.msstate.edu/docs/solidmesh/ugridformat.html
+http://www.simcenter.msstate.edu/docs/solidmesh/ugridconnectivity.html
+
 Todo
 
 install directions
