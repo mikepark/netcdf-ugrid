@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include <netcdf.h>
 
-#define nc_try( fcn )						\
-  {								\
+#define nc_try( fcn )							\
+  {									\
     int try_code;							\
-    try_code = (fcn);						\
+    try_code = (fcn);							\
     if ( try_code )							\
-      {								\
-        printf("%s: %d: %s: netcdf error: %s (%d)\n",		\
-	       __FILE__,__LINE__,__func__,nc_strerror(try_code),    \
+      {									\
+        printf("%s: %d: %s: netcdf error: %s (%d)\n",			\
+	       __FILE__,__LINE__,__func__,nc_strerror(try_code),	\
 	       try_code);						\
-	exit(try_code);						\
-      }								\
+	exit(try_code);							\
+      }									\
   }
 
 int translate_dimension( int nc, char *variable_name, FILE *ugrid )
