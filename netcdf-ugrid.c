@@ -5,18 +5,18 @@
 
 #define nc_try( fcn )						\
   {								\
-    int code;							\
-    code = (fcn);						\
-    if ( code )							\
+    int try_code;							\
+    try_code = (fcn);						\
+    if ( try_code )							\
       {								\
         printf("%s: %d: %s: netcdf error: %s (%d)\n",		\
-	       __FILE__,__LINE__,__func__,nc_strerror(code),    \
-	       code);						\
-	exit(code);						\
+	       __FILE__,__LINE__,__func__,nc_strerror(try_code),    \
+	       try_code);						\
+	exit(try_code);						\
       }								\
   }
 
-int translate_variable_dimension( int nc, char *variable_name, FILE *ugrid )
+int translate_dimension( int nc, char *variable_name, FILE *ugrid )
 {
   int var;
   int var_ndim;
@@ -56,6 +56,46 @@ int translate_variable_dimension( int nc, char *variable_name, FILE *ugrid )
   return 0;
 }
 
+int translate_nodes( int nc, FILE *ugrid )
+{
+  int var_x, var_y, var_z;
+  int var_ndim;
+  int var_dims[NC_MAX_VAR_DIMS];
+  int i;
+
+  size_t dim_length;
+  char dim_name[NC_MAX_NAME+1];
+
+
+  int node, nnodes;
+  size_t index[NC_MAX_VAR_DIMS];
+  double x,y,z;
+
+  nc_try( nc_inq_varid(nc, "points_xc", var_x) );
+  nc_try( nc_inq_varid(nc, "points_yc", var_y) );
+  nc_try( nc_inq_varid(nc, "points_zc", var_z) );
+  
+  nc_try( nc_inq_varndims(nc, var_x, &var_ndim) );
+  nc_try( nc_inq_vardimid(nc, var_x, &var_dims[0] ) );
+  nc_try( nc_inq_dim(nc, var_dims[0], &dim_name[0], &dim_length) );
+  printf(" %s = %d\n",dim_name,(int)dim_length);
+  nnodes = (int)dim_length;
+
+  for ( node = 0; node < nnodes ; node++ )
+    {
+      index[0] = node;
+      nc_try( nc_get_var1_double(nc, var_x, &index[0], &x) );
+      nc_try( nc_get_var1_double(nc, var_x, &index[0], &y) );
+      nc_try( nc_get_var1_double(nc, var_x, &index[0], &z) );
+      fprintf(ugrid, " %25.15e", x );
+      fprintf(ugrid, " %25.15e", y );
+      fprintf(ugrid, " %25.15e", z );
+      fprintf(ugrid, "\n" );
+    }
+
+  return 0;
+}
+
 int main( int argc, char *argv[] )
 {
   int nc;
@@ -71,15 +111,15 @@ int main( int argc, char *argv[] )
 
   ugrid = fopen("netcdf.ugrid","w");
 
-  nc_try( translate_variable_dimension( nc, "points_nc", ugrid ) );
+  nc_try( translate_dimension( nc, "points_nc", ugrid ) );
   
-  nc_try( translate_variable_dimension( nc, "tris", ugrid ) );
-  nc_try( translate_variable_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
+  nc_try( translate_dimension( nc, "tris", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
 
-  nc_try( translate_variable_dimension( nc, "tets", ugrid ) );
-  nc_try( translate_variable_dimension( nc, "pyramids", ugrid ) );
-  nc_try( translate_variable_dimension( nc, "prisms", ugrid ) );
-  nc_try( translate_variable_dimension( nc, "points_of_hexaeders", ugrid ) );
+  nc_try( translate_dimension( nc, "tets", ugrid ) );
+  nc_try( translate_dimension( nc, "pyramids", ugrid ) );
+  nc_try( translate_dimension( nc, "prisms", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_hexaeders", ugrid ) );
 
   fprintf(ugrid, "\n");
 
