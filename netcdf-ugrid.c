@@ -3,6 +3,13 @@
 #include <stdio.h>
 #include <netcdf.h>
 
+#if !defined(MIN)
+#define MIN(a,b) ((a)<(b)?(a):(b)) 
+#endif
+#if !defined(MAX)
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
+
 #define nc_try( fcn )							\
   {									\
     int try_code;							\
@@ -114,6 +121,8 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
   int code;
 
+  int smallest, largest;
+
   code = nc_inq_varid(nc, variable_name, &var);
   if ( -49 == code )
     {
@@ -137,6 +146,8 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
       nodes_per = (int)dim_length;
     }
 
+  smallest = 2000000000;
+  largest = -2000000000;
   for ( element = 0; element < elements ; element++ )
     {
       index[0] = element;
@@ -145,10 +156,14 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 	  index[1] = node;
 	  nc_try( nc_get_var1_int(nc, var, index, &element_node) );
 	  if ( nodes_per > 1 ) element_node++;
+	  smallest = MIN( smallest, element_node ) ;
+	  largest = MAX( largest, element_node ) ;
 	  fprintf(ugrid, " %d", element_node );
 	}
       fprintf(ugrid, "\n" );
     }
+
+  printf(" range [%d,%d]\n",smallest,largest);
 
   return 0;
 }
