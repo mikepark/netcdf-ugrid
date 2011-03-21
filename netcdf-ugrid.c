@@ -178,6 +178,30 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 	  nodes[4] = pry[4];
 	}
 
+      if ( strcmp("points_of_surfacetriangles",variable_name) ==0 )
+	{
+	  int tri[3];
+	  tri[0] = nodes[2];
+	  tri[1] = nodes[1];
+	  tri[2] = nodes[0];
+	  nodes[0] = tri[0];
+	  nodes[1] = tri[1];
+	  nodes[2] = tri[2];
+	}
+
+      if ( strcmp("points_of_surfacequadrilaterals",variable_name) ==0 )
+	{
+	  int quad[3];
+	  quad[0] = nodes[3];
+	  quad[1] = nodes[2];
+	  quad[2] = nodes[1];
+	  quad[3] = nodes[0];
+	  nodes[0] = quad[0];
+	  nodes[1] = quad[1];
+	  nodes[2] = quad[2];
+	  nodes[3] = quad[3];
+	}
+
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
 	  fprintf(ugrid, " %d", nodes[node] );
