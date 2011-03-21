@@ -184,7 +184,7 @@ int main( int argc, char *argv[] )
 
   nc_try( translate_dimension( nc, "points_xc", ugrid ) );
   
-  nc_try( translate_dimension( nc, "points_per_surfacetriangles", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_surfacetriangles", ugrid ) );
   nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
 
   nc_try( translate_dimension( nc, "points_of_tetraeders", ugrid ) );
