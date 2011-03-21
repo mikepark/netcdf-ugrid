@@ -120,6 +120,8 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
   int smallest, largest;
 
+  int *nodes;
+
   printf("%s:\n",variable_name);
 
   code = nc_inq_varid(nc, variable_name, &var);
@@ -145,6 +147,8 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
       nodes_per = (int)dim_length;
     }
 
+  nodes = (int *)malloc( nodes_per * sizeof(int) );
+
   smallest = 2000000000;
   largest = -2000000000;
   for ( element = 0; element < elements ; element++ )
@@ -153,14 +157,35 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
 	  index[1] = node;
-	  nc_try( nc_get_var1_int(nc, var, index, &element_node) );
-	  if ( nodes_per > 1 ) element_node++;
-	  smallest = MIN( smallest, element_node ) ;
-	  largest = MAX( largest, element_node ) ;
-	  fprintf(ugrid, " %d", element_node );
+	  nc_try( nc_get_var1_int(nc, var, index, &nodes[node]) );
+	  if ( nodes_per > 1 ) (nodes[node])++;
+	  smallest = MIN( smallest, nodes[node] ) ;
+	  largest = MAX( largest, nodes[node] ) ;
+	}
+
+      if ( strcmp("points_of_pyramids",variable_name) ==0 )
+	{
+	  int pry[5];
+	  pry[0] = nodes[0];
+	  pry[1] = nodes[3];
+	  pry[2] = nodes[4];
+	  pry[3] = nodes[1];
+	  pry[4] = nodes[2];
+	  nodes[0] = pry[0];
+	  nodes[1] = pry[1];
+	  nodes[2] = pry[2];
+	  nodes[3] = pry[3];
+	  nodes[4] = pry[4];
+	}
+
+      for ( node = 0 ; node < nodes_per ; node++ )
+	{
+	  fprintf(ugrid, " %d", nodes[node] );
 	}
       fprintf(ugrid, "\n" );
     }
+
+  free( nodes );
 
   printf(" range [%d,%d]\n",smallest,largest);
 
