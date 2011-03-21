@@ -58,8 +58,6 @@ int translate_dimension( int nc, char *variable_name, FILE *ugrid )
 
   fprintf(ugrid, " %d", length );
 
-  //  nc_try( nc_get_var_int(nc, var, elem->e2n ) );
-
   return 0;
 }
 
@@ -72,7 +70,6 @@ int translate_nodes( int nc, FILE *ugrid )
 
   size_t dim_length;
   char dim_name[NC_MAX_NAME+1];
-
 
   int node, nnodes;
   size_t index[NC_MAX_VAR_DIMS];
@@ -122,6 +119,8 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
   int code;
 
   int smallest, largest;
+
+  printf("%s:\n",variable_name);
 
   code = nc_inq_varid(nc, variable_name, &var);
   if ( -49 == code )
