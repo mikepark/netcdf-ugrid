@@ -23,8 +23,11 @@
       }									\
   }
 
-#define EI( a, b )							\
+#define EI( aa, bb )							\
   {									\
+    int a, b;								\
+    a = (aa);								\
+    b = (bb);								\
     if ( a != b )							\
       {									\
         printf("%s: %d: %s: was %d, expected %d\n",			\
@@ -40,6 +43,13 @@ int main( int argc, char *argv[] )
   FILE *ugrid;
 
   int nnode, ntri, nquad, ntet, npyr, npri, nhex;
+  int no_of_points;
+  int points_xc, points_yc, points_zc;
+  int dims[NC_MAX_VAR_DIMS];
+  size_t index[NC_MAX_VAR_DIMS];
+  
+  int i;
+  double dp;
 
   if ( argc < 2 ) 
     {
@@ -66,6 +76,26 @@ int main( int argc, char *argv[] )
   printf("npyr %d\n",npyr);
   printf("npri %d\n",npri);
   printf("nhex %d\n",nhex);
+
+  nc_try( nc_def_dim(nc, "no_of_points", nnode, &no_of_points) );
+
+  dims[0] = no_of_points;
+  nc_try( nc_def_var(nc, "points_xc", NC_DOUBLE, 1, dims, &points_xc) );
+  nc_try( nc_def_var(nc, "points_yc", NC_DOUBLE, 1, dims, &points_yc) );
+  nc_try( nc_def_var(nc, "points_zc", NC_DOUBLE, 1, dims, &points_zc) );
+
+  nc_try( nc_enddef(nc) );
+
+  for ( i = 0; i < nnode; i++ )
+    {
+      index[0] = i;
+      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      nc_try( nc_put_var1_double(nc, points_xc, index, &dp) );
+      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      nc_try( nc_put_var1_double(nc, points_yc, index, &dp) );
+      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
+    }
 
   nc_try( nc_close(nc) );
   fclose( ugrid );
