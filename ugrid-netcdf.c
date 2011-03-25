@@ -43,11 +43,14 @@ int main( int argc, char *argv[] )
   FILE *ugrid;
 
   int nnode, ntri, nquad, ntet, npyr, npri, nhex;
-  int no_of_points;
-  int points_xc, points_yc, points_zc;
+
   int dims[NC_MAX_VAR_DIMS];
   size_t index[NC_MAX_VAR_DIMS];
-  
+
+  int points_xc, points_yc, points_zc;
+  int points_of_surfacetriangles;
+  int points_of_surfacequadrilaterals;
+
   int i;
   double dp;
 
@@ -77,12 +80,28 @@ int main( int argc, char *argv[] )
   printf("npri %d\n",npri);
   printf("nhex %d\n",nhex);
 
-  nc_try( nc_def_dim(nc, "no_of_points", nnode, &no_of_points) );
-
-  dims[0] = no_of_points;
+  nc_try( nc_def_dim(nc, "no_of_points", nnode, &dims[0]) );
   nc_try( nc_def_var(nc, "points_xc", NC_DOUBLE, 1, dims, &points_xc) );
   nc_try( nc_def_var(nc, "points_yc", NC_DOUBLE, 1, dims, &points_yc) );
   nc_try( nc_def_var(nc, "points_zc", NC_DOUBLE, 1, dims, &points_zc) );
+
+  points_of_surfacetriangles = 0;
+  if ( ntri > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_surfacetriangles", ntri, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_surfacetriangle", 3, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_surfacetriangles", NC_INT, 2, dims, 
+			 &points_of_surfacetriangles) );
+    }
+
+  points_of_surfacequadrilaterals = 0;
+  if ( nquad > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_surfacequadrilaterals", nquad, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_surfacequadrilateral", 4, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_surfacequadrilaterals", NC_INT, 2, dims, 
+			 &points_of_surfacequadrilaterals) );
+    }
 
   nc_try( nc_enddef(nc) );
 
