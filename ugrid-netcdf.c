@@ -36,6 +36,114 @@
       }									\
   }
 
+int translate_ints( int nc, char *variable_name, FILE *ugrid )
+{
+  int var;
+  int var_ndim;
+  int var_dims[NC_MAX_VAR_DIMS];
+  int i;
+
+  size_t dim_length;
+  char dim_name[NC_MAX_NAME+1];
+
+  int element, elements;
+  int node, nodes_per;
+  int element_node;
+
+  size_t index[NC_MAX_VAR_DIMS];
+
+  int code;
+
+  int *nodes;
+
+  printf("%s:\n",variable_name);
+
+  code = nc_inq_varid(nc, variable_name, &var);
+  if ( -49 == code )
+    {
+      printf("%s:\n not in netcfd file\n",variable_name);
+      return 0;
+    }
+  nc_try(code);
+
+  nc_try( nc_inq_varndims(nc, var, &var_ndim) );
+  nc_try( nc_inq_vardimid(nc, var, &var_dims[0] ) );
+
+  nc_try( nc_inq_dim(nc, var_dims[0], &dim_name[0], &dim_length) );
+  printf(" %s = %d\n",dim_name,(int)dim_length);
+  elements = (int)dim_length;
+
+  nodes_per = 1;
+  if ( var_ndim > 1 )
+    {
+      nc_try( nc_inq_dim(nc, var_dims[1], &dim_name[0], &dim_length) );
+      printf(" %s = %d\n",dim_name,(int)dim_length);
+      nodes_per = (int)dim_length;
+    }
+
+  nodes = (int *)malloc( nodes_per * sizeof(int) );
+
+  for ( element = 0; element < elements ; element++ )
+    {
+
+      for ( node = 0 ; node < nodes_per ; node++ )
+	{
+	  EI( 1, fscanf(ugrid, "%d", &nodes[node] ) );
+	  if ( nodes_per > 1 ) (nodes[node])++;
+	}
+
+      if ( strcmp("points_of_pyramids",variable_name) ==0 )
+	{
+	  int pry[5];
+	  pry[0] = nodes[0];
+	  pry[1] = nodes[3];
+	  pry[2] = nodes[4];
+	  pry[3] = nodes[1];
+	  pry[4] = nodes[2];
+	  nodes[0] = pry[0];
+	  nodes[1] = pry[1];
+	  nodes[2] = pry[2];
+	  nodes[3] = pry[3];
+	  nodes[4] = pry[4];
+	}
+
+      if ( strcmp("points_of_surfacetriangles",variable_name) ==0 )
+	{
+	  int tri[3];
+	  tri[0] = nodes[2];
+	  tri[1] = nodes[1];
+	  tri[2] = nodes[0];
+	  nodes[0] = tri[0];
+	  nodes[1] = tri[1];
+	  nodes[2] = tri[2];
+	}
+
+      if ( strcmp("points_of_surfacequadrilaterals",variable_name) ==0 )
+	{
+	  int quad[3];
+	  quad[0] = nodes[3];
+	  quad[1] = nodes[2];
+	  quad[2] = nodes[1];
+	  quad[3] = nodes[0];
+	  nodes[0] = quad[0];
+	  nodes[1] = quad[1];
+	  nodes[2] = quad[2];
+	  nodes[3] = quad[3];
+	}
+
+      index[0] = element;
+      for ( node = 0 ; node < nodes_per ; node++ )
+	{
+	  index[1] = node;
+	  nc_try( nc_put_var1_int(nc, var, index, &nodes[node]) );
+	}
+
+    }
+
+  free( nodes );
+
+  return 0;
+}
 
 int main( int argc, char *argv[] )
 {
@@ -48,9 +156,7 @@ int main( int argc, char *argv[] )
   size_t index[NC_MAX_VAR_DIMS];
 
   int points_xc, points_yc, points_zc;
-  int points_of_surfacetriangles;
-  int points_of_surfacequadrilaterals;
-  int boundarymarker_of_surfaces;
+  int var;
 
   int i;
   double dp;
@@ -86,30 +192,59 @@ int main( int argc, char *argv[] )
   nc_try( nc_def_var(nc, "points_yc", NC_DOUBLE, 1, dims, &points_yc) );
   nc_try( nc_def_var(nc, "points_zc", NC_DOUBLE, 1, dims, &points_zc) );
 
-  points_of_surfacetriangles = 0;
   if ( ntri > 0 )
     {
       nc_try( nc_def_dim(nc, "no_of_surfacetriangles", ntri, &dims[0]) );
       nc_try( nc_def_dim(nc, "points_per_surfacetriangle", 3, &dims[1]) );
-      nc_try( nc_def_var(nc, "points_of_surfacetriangles", NC_INT, 2, dims, 
-			 &points_of_surfacetriangles) );
+      nc_try( nc_def_var(nc, "points_of_surfacetriangles", 
+			 NC_INT, 2, dims, &var) );
     }
 
-  points_of_surfacequadrilaterals = 0;
   if ( nquad > 0 )
     {
       nc_try( nc_def_dim(nc, "no_of_surfacequadrilaterals", nquad, &dims[0]) );
       nc_try( nc_def_dim(nc, "points_per_surfacequadrilateral", 4, &dims[1]) );
-      nc_try( nc_def_var(nc, "points_of_surfacequadrilaterals", NC_INT, 2, dims, 
-			 &points_of_surfacequadrilaterals) );
+      nc_try( nc_def_var(nc, "points_of_surfacequadrilaterals", 
+			 NC_INT, 2, dims, &var) );
     }
 
-  boundarymarker_of_surfaces = 0;
   if ( ntri+nquad > 0 )
     {
       nc_try( nc_def_dim(nc, "no_of_surfaceelements", ntri+nquad, &dims[0]) );
-      nc_try( nc_def_var(nc, "boundarymarker_of_surfaces", NC_INT, 1, dims, 
-			 &boundarymarker_of_surfaces) );
+      nc_try( nc_def_var(nc, "boundarymarker_of_surfaces", 
+			 NC_INT, 1, dims, &var) );
+    }
+
+  if ( ntet > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_tetraeders", ntet, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_tetraeder", 4, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_tetraeders",
+			 NC_INT, 2, dims, &var) );
+    }
+
+  if ( npyr > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_pyramids", npyr, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_pyramid", 5, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_pyramids", 
+			 NC_INT, 2, dims, &var) );
+    }
+
+  if ( npri > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_prisms", npri, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_prism", 6, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_prisms", 
+			 NC_INT, 2, dims, &var) );
+    }
+
+  if ( nhex > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_hexaeders", nhex, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_hexaeder", 8, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_hexaeders", 
+			 NC_INT, 2, dims, &var) );
     }
 
   nc_try( nc_enddef(nc) );
@@ -124,6 +259,15 @@ int main( int argc, char *argv[] )
       EI( 1, fscanf(ugrid, "%lf", &dp ) );
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
+  
+  nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
+  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
+
+  nc_try( translate_ints( nc, "points_of_tetraeders", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_pyramids", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_prisms", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
 
   nc_try( nc_close(nc) );
   fclose( ugrid );
