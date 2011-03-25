@@ -198,19 +198,19 @@ int main( int argc, char *argv[] )
 			 NC_INT, 2, dims, &var) );
     }
 
-  if ( npyr > 0 )
-    {
-      nc_try( nc_def_dim(nc, "no_of_pyramids", npyr, &dims[0]) );
-      nc_try( nc_def_dim(nc, "points_per_pyramid", 5, &dims[1]) );
-      nc_try( nc_def_var(nc, "points_of_pyramids", 
-			 NC_INT, 2, dims, &var) );
-    }
-
   if ( npri > 0 )
     {
       nc_try( nc_def_dim(nc, "no_of_prisms", npri, &dims[0]) );
       nc_try( nc_def_dim(nc, "points_per_prism", 6, &dims[1]) );
       nc_try( nc_def_var(nc, "points_of_prisms", 
+			 NC_INT, 2, dims, &var) );
+    }
+
+  if ( npyr > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_pyramids", npyr, &dims[0]) );
+      nc_try( nc_def_dim(nc, "points_per_pyramid", 5, &dims[1]) );
+      nc_try( nc_def_var(nc, "points_of_pyramids", 
 			 NC_INT, 2, dims, &var) );
     }
 
