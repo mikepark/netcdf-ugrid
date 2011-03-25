@@ -1,14 +1,17 @@
 
+NETCDF=/usr/local
+CFLAGS=-g
+
 default: netcdf-ugrid ugrid-netcdf
 
 netcdf-ugrid: netcdf-ugrid.c
-	gcc -g -o netcdf-ugrid netcdf-ugrid.c -lnetcdf
+	gcc ${CFLAGS} -o netcdf-ugrid netcdf-ugrid.c -I${NETCDF}/include -L${NETCDF}/lib -lnetcdf
 
 ugrid-netcdf: ugrid-netcdf.c
-	gcc -g -o ugrid-netcdf ugrid-netcdf.c -lnetcdf
+	gcc ${CFLAGS} -o ugrid-netcdf ugrid-netcdf.c -I${NETCDF}/include -L${NETCDF}/lib -lnetcdf
 
 clean:
 	rm -rf netcdf-ugrid
-	rm -rf ugrid-netcfd
+	rm -rf ugrid-netcdf
 	rm -rf *.dSYM
 
