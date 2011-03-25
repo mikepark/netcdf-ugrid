@@ -275,5 +275,7 @@ int main( int argc, char *argv[] )
   nc_try( nc_close(nc) );
   fclose( ugrid );
 
+  printf("%s\n", nc_inq_libvers());
+
   return 0;
 }
