@@ -50,6 +50,7 @@ int main( int argc, char *argv[] )
   int points_xc, points_yc, points_zc;
   int points_of_surfacetriangles;
   int points_of_surfacequadrilaterals;
+  int boundarymarker_of_surfaces;
 
   int i;
   double dp;
@@ -101,6 +102,14 @@ int main( int argc, char *argv[] )
       nc_try( nc_def_dim(nc, "points_per_surfacequadrilateral", 4, &dims[1]) );
       nc_try( nc_def_var(nc, "points_of_surfacequadrilaterals", NC_INT, 2, dims, 
 			 &points_of_surfacequadrilaterals) );
+    }
+
+  boundarymarker_of_surfaces = 0;
+  if ( ntri+nquad > 0 )
+    {
+      nc_try( nc_def_dim(nc, "no_of_surfaceelements", ntri+nquad, &dims[0]) );
+      nc_try( nc_def_var(nc, "boundarymarker_of_surfaces", NC_INT, 1, dims, 
+			 &boundarymarker_of_surfaces) );
     }
 
   nc_try( nc_enddef(nc) );
