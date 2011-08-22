@@ -1,5 +1,5 @@
 
-NETCDF=/usr/local
+NETCDF=$(HOME)/local
 CFLAGS=-g
 
 default: netcdf-ugrid ugrid-netcdf

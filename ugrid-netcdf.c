@@ -36,7 +36,13 @@
       }									\
   }
 
-int translate_ints( int nc, char *variable_name, FILE *ugrid )
+typedef struct UGRID UGRID;
+struct UGRID {
+  FILE *file;
+  int format;
+};
+
+int translate_ints( int nc, char *variable_name,  UGRID ugrid )
 {
   int var;
   int var_ndim;
@@ -88,7 +94,7 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
-	  EI( 1, fscanf(ugrid, "%d", &nodes[node] ) );
+	  EI( 1, fscanf(ugrid.file, "%d", &nodes[node] ) );
 	  if ( nodes_per > 1 ) (nodes[node])--;
 	}
 
@@ -148,7 +154,7 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 int main( int argc, char *argv[] )
 {
   int nc;
-  FILE *ugrid;
+  UGRID ugrid;
 
   int nnode, ntri, nquad, ntet, npyr, npri, nhex;
 
@@ -167,8 +173,8 @@ int main( int argc, char *argv[] )
       return 1;
     }
 
-  ugrid = fopen(argv[1],"r");
-  if (NULL == ugrid)
+  ugrid.file = fopen(argv[1],"r");
+  if (NULL == ugrid.file)
     {
       printf("unable to open %s\n",argv[1]);
       return 1;
@@ -176,7 +182,7 @@ int main( int argc, char *argv[] )
 
   nc_try( nc_create("grid.netcdf", NC_CLOBBER, &nc) );
 
-  EI( 7, fscanf(ugrid, "%d %d %d %d %d %d %d",
+  EI( 7, fscanf(ugrid.file, "%d %d %d %d %d %d %d",
 		&nnode, &ntri, &nquad, &ntet, &npyr, &npri, &nhex) );
 
   printf("nnode %d\n",nnode);
@@ -255,11 +261,11 @@ int main( int argc, char *argv[] )
   for ( i = 0; i < nnode; i++ )
     {
       index[0] = i;
-      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
       nc_try( nc_put_var1_double(nc, points_xc, index, &dp) );
-      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
       nc_try( nc_put_var1_double(nc, points_yc, index, &dp) );
-      EI( 1, fscanf(ugrid, "%lf", &dp ) );
+      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
   
@@ -273,7 +279,7 @@ int main( int argc, char *argv[] )
   nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
 
   nc_try( nc_close(nc) );
-  fclose( ugrid );
+  fclose( ugrid.file );
 
   printf("%s\n", nc_inq_libvers());
 
