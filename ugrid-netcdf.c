@@ -36,6 +36,27 @@
       }									\
   }
 
+#define int_from_ugrid( ugrid, int_ptr)		\
+  {						\
+    if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
+      {									\
+        printf("%s: %d: %s: int_from_ugrid \n",				\
+	       __FILE__,__LINE__,__func__);				\
+	return(1);							\
+      }									\
+  }
+
+#define double_from_ugrid( ugrid, double_ptr)		\
+  {						\
+    if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )			\
+      {									\
+        printf("%s: %d: %s: int_from_ugrid \n",				\
+	       __FILE__,__LINE__,__func__);				\
+	return(1);							\
+      }									\
+  }
+
+
 typedef struct UGRID UGRID;
 struct UGRID {
   FILE *file;
@@ -150,16 +171,6 @@ int translate_ints( int nc, char *variable_name, UGRID ugrid )
 
   return 0;
 }
-
-#define int_from_ugrid( ugrid, ntet)		\
-  {						\
-    if ( 1 != fscanf(ugrid.file, "%d", ntet) )				\
-      {									\
-        printf("%s: %d: %s: int_from_ugrid \n",				\
-	       __FILE__,__LINE__,__func__);				\
-	return(1);							\
-      }									\
-  }
 
 int main( int argc, char *argv[] )
 {
@@ -285,11 +296,11 @@ int main( int argc, char *argv[] )
   for ( i = 0; i < nnode; i++ )
     {
       index[0] = i;
-      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
+      double_from_ugrid( ugrid, &dp);
       nc_try( nc_put_var1_double(nc, points_xc, index, &dp) );
-      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
+      double_from_ugrid( ugrid, &dp);
       nc_try( nc_put_var1_double(nc, points_yc, index, &dp) );
-      EI( 1, fscanf(ugrid.file, "%lf", &dp ) );
+      double_from_ugrid( ugrid, &dp);
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
   
