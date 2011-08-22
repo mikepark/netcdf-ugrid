@@ -230,7 +230,7 @@ int main( int argc, char *argv[] )
   if ( argc < 2 ) 
     {
       printf("usage: %s my-ugrid-filename [-b8]\n",argv[0]);
-      printf(" -b8 big endian steaming binary\n");
+      printf(" -b8 big endian streaming binary\n");
       return 1;
     }
 
