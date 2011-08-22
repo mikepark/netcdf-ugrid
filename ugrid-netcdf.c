@@ -42,7 +42,7 @@ struct UGRID {
   int format;
 };
 
-int translate_ints( int nc, char *variable_name,  UGRID ugrid )
+int translate_ints( int nc, char *variable_name, UGRID ugrid )
 {
   int var;
   int var_ndim;
@@ -151,6 +151,16 @@ int translate_ints( int nc, char *variable_name,  UGRID ugrid )
   return 0;
 }
 
+#define int_from_ugrid( ugrid, ntet)		\
+  {						\
+    if ( 1 != fscanf(ugrid.file, "%d", ntet) )				\
+      {									\
+        printf("%s: %d: %s: int_from_ugrid \n",				\
+	       __FILE__,__LINE__,__func__);				\
+	return(1);							\
+      }									\
+  }
+
 int main( int argc, char *argv[] )
 {
   int nc;
@@ -169,7 +179,8 @@ int main( int argc, char *argv[] )
 
   if ( argc < 2 ) 
     {
-      printf("usage: %s my-ugrid-filename\n",argv[0]);
+      printf("usage: %s my-ugrid-filename [-b8]\n",argv[0]);
+      printf(" -b8 big endian steaming binary\n");
       return 1;
     }
 
@@ -180,17 +191,30 @@ int main( int argc, char *argv[] )
       return 1;
     }
 
+  ugrid.format = 0;
+  if( ( 2 < argc ) && ( strcmp(argv[2],"-b8") == 0 ) ) 
+    {
+      printf("-b8: big endian\n");
+      ugrid.format = 1;
+    }
+
   nc_try( nc_create("grid.netcdf", NC_CLOBBER, &nc) );
 
-  EI( 7, fscanf(ugrid.file, "%d %d %d %d %d %d %d",
-		&nnode, &ntri, &nquad, &ntet, &npyr, &npri, &nhex) );
-
+  int_from_ugrid( ugrid, &nnode);
   printf("nnode %d\n",nnode);
+
+  int_from_ugrid( ugrid, &ntri);
   printf("ntri %d\n",ntri);
+  int_from_ugrid( ugrid, &nquad);
   printf("nquad %d\n",nquad);
+
+  int_from_ugrid( ugrid, &ntet);
   printf("ntet %d\n",ntet);
+  int_from_ugrid( ugrid, &npyr);
   printf("npyr %d\n",npyr);
+  int_from_ugrid( ugrid, &npri);
   printf("npri %d\n",npri);
+  int_from_ugrid( ugrid, &nhex);
   printf("nhex %d\n",nhex);
 
   nc_try( nc_def_dim(nc, "no_of_elements", ntet+npyr+npri+nhex, &dims[0]) );
