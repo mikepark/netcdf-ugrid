@@ -23,21 +23,8 @@
       }									\
   }
 
-#define EI( aa, bb )							\
+#define int_from_ugrid( ugrid, int_ptr)					\
   {									\
-    int a, b;								\
-    a = (aa);								\
-    b = (bb);								\
-    if ( a != b )							\
-      {									\
-        printf("%s: %d: %s: was %d, expected %d\n",			\
-	       __FILE__,__LINE__,__func__,b,a);				\
-	return(1);							\
-      }									\
-  }
-
-#define int_from_ugrid( ugrid, int_ptr)		\
-  {						\
     if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
       {									\
         printf("%s: %d: %s: int_from_ugrid \n",				\
@@ -46,8 +33,8 @@
       }									\
   }
 
-#define double_from_ugrid( ugrid, double_ptr)		\
-  {						\
+#define double_from_ugrid( ugrid, double_ptr)				\
+  {									\
     if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )			\
       {									\
         printf("%s: %d: %s: int_from_ugrid \n",				\
@@ -115,7 +102,7 @@ int translate_ints( int nc, char *variable_name, UGRID ugrid )
 
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
-	  EI( 1, fscanf(ugrid.file, "%d", &nodes[node] ) );
+	  int_from_ugrid( ugrid, &nodes[node]);
 	  if ( nodes_per > 1 ) (nodes[node])--;
 	}
 
