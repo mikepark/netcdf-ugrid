@@ -3,6 +3,12 @@
 #include <stdio.h>
 #include <netcdf.h>
 
+typedef struct UGRID UGRID;
+struct UGRID {
+  FILE *file;
+  int binary;
+};
+
 #if !defined(MIN)
 #define MIN(a,b) ((a)<(b)?(a):(b)) 
 #endif
@@ -23,32 +29,78 @@
       }									\
   }
 
+#define SWAP_INT(x) { \
+    int y; \
+    char *xp = (char *)&(x); \
+    char *yp = (char *)&(y); \
+    *(yp+3) = *(xp+0); \
+    *(yp+2) = *(xp+1); \
+    *(yp+1) = *(xp+2); \
+    *(yp+0) = *(xp+3); \
+    (x) = y; \
+  }
+
 #define int_from_ugrid( ugrid, int_ptr)					\
   {									\
-    if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
+    if ( ugrid.binary )							\
       {									\
-        printf("%s: %d: %s: int_from_ugrid \n",				\
-	       __FILE__,__LINE__,__func__);				\
-	return(1);							\
+	if ( 1 != fread((int_ptr), sizeof(int), 1, ugrid.file) )	\
+	  {								\
+	    printf("%s: %d: %s: BINARY read \n",			\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+	SWAP_INT(*int_ptr);						\
       }									\
+    else								\
+      {									\
+	if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
+	  {								\
+	    printf("%s: %d: %s: ASCII read \n",				\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+      }									\
+  }
+
+#define SWAP_DOUBLE(x) { \
+    double y; \
+    char *xp = (char *)&(x); \
+    char *yp = (char *)&(y); \
+    *(yp+7) = *(xp+0); \
+    *(yp+6) = *(xp+1); \
+    *(yp+5) = *(xp+2); \
+    *(yp+4) = *(xp+3); \
+    *(yp+3) = *(xp+4); \
+    *(yp+2) = *(xp+5); \
+    *(yp+1) = *(xp+6); \
+    *(yp+0) = *(xp+7); \
+    (x) = y; \
   }
 
 #define double_from_ugrid( ugrid, double_ptr)				\
   {									\
-    if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )			\
+    if ( ugrid.binary )							\
       {									\
-        printf("%s: %d: %s: int_from_ugrid \n",				\
-	       __FILE__,__LINE__,__func__);				\
-	return(1);							\
+	if ( 1 != fread((double_ptr), sizeof(double), 1, ugrid.file) )	\
+	  {								\
+	    printf("%s: %d: %s: BINARY read \n",			\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+	SWAP_DOUBLE(*double_ptr);					\
+      }									\
+    else								\
+      {									\
+	if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )		\
+	  {								\
+	    printf("%s: %d: %s: ASCII read \n",				\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
       }									\
   }
 
-
-typedef struct UGRID UGRID;
-struct UGRID {
-  FILE *file;
-  int format;
-};
 
 int translate_ints( int nc, char *variable_name, UGRID ugrid )
 {
@@ -189,11 +241,11 @@ int main( int argc, char *argv[] )
       return 1;
     }
 
-  ugrid.format = 0;
+  ugrid.binary = 0;
   if( ( 2 < argc ) && ( strcmp(argv[2],"-b8") == 0 ) ) 
     {
       printf("-b8: big endian\n");
-      ugrid.format = 1;
+      ugrid.binary = 1;
     }
 
   nc_try( nc_create("grid.netcdf", NC_CLOBBER, &nc) );
