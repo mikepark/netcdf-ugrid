@@ -332,8 +332,10 @@ int main( int argc, char *argv[] )
 
   nc_try( nc_enddef(nc) );
 
+  printf("transfer grid points...\n");
   for ( i = 0; i < nnode; i++ )
     {
+      if ( 0 == (i % 1000) ) printf("%d nodes processed\n",i);
       index[0] = i;
       double_from_ugrid( ugrid, &dp);
       nc_try( nc_put_var1_double(nc, points_xc, index, &dp) );
@@ -342,6 +344,7 @@ int main( int argc, char *argv[] )
       double_from_ugrid( ugrid, &dp);
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
+  printf("grid points complete\n");
   
   nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
   nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
