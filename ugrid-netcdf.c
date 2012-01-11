@@ -1,6 +1,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+
 #include <netcdf.h>
 
 typedef struct UGRID UGRID;
@@ -227,14 +229,17 @@ int main( int argc, char *argv[] )
   int i;
   double dp;
 
+  size_t end_of_string;
+
   if ( argc < 2 ) 
     {
-      printf("usage: %s my-ugrid-filename [-b8]\n",argv[0]);
+      printf("usage: %s my-ugrid-filename.{b8.ugrid|ugrid}\n",argv[0]);
       printf(" -b8 big endian streaming binary\n");
       return 1;
     }
 
   ugrid.file = fopen(argv[1],"r");
+
   if (NULL == ugrid.file)
     {
       printf("unable to open %s\n",argv[1]);
@@ -242,9 +247,12 @@ int main( int argc, char *argv[] )
     }
 
   ugrid.binary = 0;
-  if( ( 2 < argc ) && ( strcmp(argv[2],"-b8") == 0 ) ) 
+
+  end_of_string = strlen(argv[1]);
+
+  if( strcmp(&(argv[1])[end_of_string-9],".b8.ugrid") == 0 ) 
     {
-      printf("-b8: big endian\n");
+      printf("big endian by extension\n");
       ugrid.binary = 1;
     }
 
