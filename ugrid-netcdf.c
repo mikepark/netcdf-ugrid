@@ -343,7 +343,7 @@ int main( int argc, char *argv[] )
   printf("transfer grid points...\n");
   for ( i = 0; i < nnode; i++ )
     {
-      if ( 0 == (i % 1000) ) 
+      if ( 0 == (i % 10000) ) 
 	printf( "%5.1f percent %d of %d nodes processed\n",
 	        100.0*((double)i)/((double)nnode),i,nnode);
       index[0] = i;
