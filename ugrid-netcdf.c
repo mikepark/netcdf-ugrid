@@ -5,7 +5,7 @@
 
 #include <netcdf.h>
 
-enum ugrid_type { ascii, b8 };
+enum ugrid_type { ascii, b8 , r8};
 
 typedef struct UGRID UGRID;
 struct UGRID {
@@ -42,6 +42,22 @@ struct UGRID {
     *(yp+1) = *(xp+2); \
     *(yp+0) = *(xp+3); \
     (x) = y; \
+  }
+
+#define skip_fortran_record_size_if_needed( ugrid )			\
+  {									\
+    if ( ugrid.type == r8 )						\
+      {									\
+	int fortran_record_size;					\
+	if ( 1 != fread(&fortran_record_size, sizeof(int), 1, ugrid.file) ) \
+	  {								\
+	    printf("%s: %d: %s: BINARY read \n",			\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+	SWAP_INT(fortran_record_size);					\
+	printf("fortran record size %d bytes\n",fortran_record_size);	\
+      }									\
   }
 
 #define int_from_ugrid( ugrid, int_ptr)					\
@@ -253,11 +269,19 @@ int main( int argc, char *argv[] )
 
   if( strcmp(&(argv[1])[end_of_string-9],".b8.ugrid") == 0 ) 
     {
-      printf("big endian by extension\n");
+      printf("big endian C binary by extension (.b8.ugrid)\n");
       ugrid.type = b8;
     }
 
+  if( strcmp(&(argv[1])[end_of_string-9],".r8.ugrid") == 0 ) 
+    {
+      printf("big endian ofrtran unformatted by extension (.r8.ugrid)\n");
+      ugrid.type = r8;
+    }
+
   nc_try( nc_create("grid.netcdf", NC_CLOBBER, &nc) );
+
+  skip_fortran_record_size_if_needed( ugrid )
 
   int_from_ugrid( ugrid, &nnode);
   printf("nnode %d\n",nnode);
@@ -276,8 +300,9 @@ int main( int argc, char *argv[] )
   int_from_ugrid( ugrid, &nhex);
   printf("nhex %d\n",nhex);
 
-  nc_try( nc_def_dim(nc, "no_of_elements", ntet+npyr+npri+nhex, &dims[0]) );
+  skip_fortran_record_size_if_needed( ugrid )
 
+  nc_try( nc_def_dim(nc, "no_of_elements", ntet+npyr+npri+nhex, &dims[0]) );
 
   if ( ntet > 0 )
     {
@@ -341,6 +366,8 @@ int main( int argc, char *argv[] )
 
   nc_try( nc_enddef(nc) );
 
+  skip_fortran_record_size_if_needed( ugrid )
+
   printf("transfer grid points...\n");
   for ( i = 0; i < nnode; i++ )
     {
@@ -356,7 +383,7 @@ int main( int argc, char *argv[] )
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
   printf("grid points complete\n");
-  
+
   nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
   nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
   nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
@@ -365,6 +392,8 @@ int main( int argc, char *argv[] )
   nc_try( translate_ints( nc, "points_of_pyramids", ugrid ) );
   nc_try( translate_ints( nc, "points_of_prisms", ugrid ) );
   nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
+
+  skip_fortran_record_size_if_needed( ugrid )
 
   nc_try( nc_close(nc) );
   fclose( ugrid.file );
