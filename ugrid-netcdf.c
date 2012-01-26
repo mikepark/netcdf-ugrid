@@ -5,10 +5,12 @@
 
 #include <netcdf.h>
 
+enum ugrid_type { ascii, b8 };
+
 typedef struct UGRID UGRID;
 struct UGRID {
   FILE *file;
-  int binary;
+  enum ugrid_type type;
 };
 
 #if !defined(MIN)
@@ -44,7 +46,16 @@ struct UGRID {
 
 #define int_from_ugrid( ugrid, int_ptr)					\
   {									\
-    if ( ugrid.binary )							\
+    if ( ugrid.type == ascii )						\
+      {									\
+	if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
+	  {								\
+	    printf("%s: %d: %s: ASCII read \n",				\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+      }									\
+    else								\
       {									\
 	if ( 1 != fread((int_ptr), sizeof(int), 1, ugrid.file) )	\
 	  {								\
@@ -53,15 +64,6 @@ struct UGRID {
 	    return(1);							\
 	  }								\
 	SWAP_INT(*int_ptr);						\
-      }									\
-    else								\
-      {									\
-	if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
-	  {								\
-	    printf("%s: %d: %s: ASCII read \n",				\
-		   __FILE__,__LINE__,__func__);				\
-	    return(1);							\
-	  }								\
       }									\
   }
 
@@ -82,7 +84,16 @@ struct UGRID {
 
 #define double_from_ugrid( ugrid, double_ptr)				\
   {									\
-    if ( ugrid.binary )							\
+    if ( ugrid.type == ascii )						\
+      {									\
+	if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )		\
+	  {								\
+	    printf("%s: %d: %s: ASCII read \n",				\
+		   __FILE__,__LINE__,__func__);				\
+	    return(1);							\
+	  }								\
+      }									\
+    else								\
       {									\
 	if ( 1 != fread((double_ptr), sizeof(double), 1, ugrid.file) )	\
 	  {								\
@@ -91,15 +102,6 @@ struct UGRID {
 	    return(1);							\
 	  }								\
 	SWAP_DOUBLE(*double_ptr);					\
-      }									\
-    else								\
-      {									\
-	if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )		\
-	  {								\
-	    printf("%s: %d: %s: ASCII read \n",				\
-		   __FILE__,__LINE__,__func__);				\
-	    return(1);							\
-	  }								\
       }									\
   }
 
@@ -234,7 +236,6 @@ int main( int argc, char *argv[] )
   if ( argc < 2 ) 
     {
       printf("usage: %s my-ugrid-filename.{b8.ugrid|ugrid}\n",argv[0]);
-      printf(" -b8 big endian streaming binary\n");
       return 1;
     }
 
@@ -246,14 +247,14 @@ int main( int argc, char *argv[] )
       return 1;
     }
 
-  ugrid.binary = 0;
+  ugrid.type = ascii;
 
   end_of_string = strlen(argv[1]);
 
   if( strcmp(&(argv[1])[end_of_string-9],".b8.ugrid") == 0 ) 
     {
       printf("big endian by extension\n");
-      ugrid.binary = 1;
+      ugrid.type = b8;
     }
 
   nc_try( nc_create("grid.netcdf", NC_CLOBBER, &nc) );
