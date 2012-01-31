@@ -100,28 +100,32 @@ struct UGRID {
       }									\
     else								\
       {									\
-	if ( (ugrid).fortran_record_size == -2147483639 &&		\
-	     (ugrid).fortran_record_remaining == 0 )			\
+	char *p = (char *)(int_ptr);int b;				\
+	for ( b = 0;b<4;b++)						\
 	  {								\
-	    skip_fortran_record_size_if_needed( ugrid );		\
-	    skip_fortran_record_size_if_needed( ugrid );		\
-	  }								\
-	if ( (ugrid).fortran_record_size != 0 &&			\
-	     (ugrid).fortran_record_remaining < 4 )			\
-	  {								\
-	    printf("%s: %d: %s: not enough data %d left on record\n",	\
-                   __FILE__,__LINE__,__func__,				\
-		   (ugrid).fortran_record_remaining);			\
-	    return(1);							\
-	  }								\
-	if ( 1 != fread((int_ptr), sizeof(int), 1, (ugrid).file) )	\
-	  {								\
-	    printf("%s: %d: %s: BINARY read \n",			\
-		   __FILE__,__LINE__,__func__);				\
-	    return(1);							\
+	    if ( (ugrid).fortran_record_size == -2147483639 &&		\
+		 (ugrid).fortran_record_remaining == 0 )		\
+	      {								\
+		skip_fortran_record_size_if_needed( ugrid );		\
+		skip_fortran_record_size_if_needed( ugrid );		\
+	      }								\
+	    if ( (ugrid).fortran_record_size != 0 &&			\
+		 (ugrid).fortran_record_remaining < 1 )			\
+	      {								\
+		printf("%s: %d: %s: not enough data %d %d left on record\n", \
+		       __FILE__,__LINE__,__func__,			\
+		       (ugrid).fortran_record_remaining,b);		\
+		return(1);						\
+	      }								\
+	    if ( 1 != fread(&(p[b]), 1, 1, (ugrid).file) )		\
+	      {								\
+		printf("%s: %d: %s: BINARY read \n",			\
+		       __FILE__,__LINE__,__func__);			\
+		return(1);						\
+	      }								\
+	    (ugrid).fortran_record_remaining -= 1;			\
 	  }								\
 	SWAP_INT(*int_ptr);						\
-	(ugrid).fortran_record_remaining -= 4;				\
       }									\
   }
 
@@ -153,28 +157,32 @@ struct UGRID {
       }									\
     else								\
       {									\
-	if ( (ugrid).fortran_record_size == -2147483639 &&		\
-	     (ugrid).fortran_record_remaining == 0 )			\
+	char *p = (char *)(double_ptr);int b;				\
+	for ( b = 0;b<8;b++)						\
 	  {								\
-	    skip_fortran_record_size_if_needed( ugrid );		\
-	    skip_fortran_record_size_if_needed( ugrid );		\
-	  }								\
-	if ( (ugrid).fortran_record_size != 0 &&			\
-	     (ugrid).fortran_record_remaining < 8 )			\
-	  {								\
-	    printf("%s: %d: %s: not enough data %d left on record\n",	\
-                   __FILE__,__LINE__,__func__,				\
-		   (ugrid).fortran_record_remaining);			\
-	    return(1);							\
-	  }								\
-	if ( 1 != fread((double_ptr), sizeof(double), 1, (ugrid).file) ) \
-	  {								\
-	    printf("%s: %d: %s: BINARY read \n",			\
-		   __FILE__,__LINE__,__func__);				\
-	    return(1);							\
+	    if ( (ugrid).fortran_record_size == -2147483639 &&		\
+		 (ugrid).fortran_record_remaining == 0 )		\
+	      {								\
+		skip_fortran_record_size_if_needed( ugrid );		\
+		skip_fortran_record_size_if_needed( ugrid );		\
+	      }								\
+	    if ( (ugrid).fortran_record_size != 0 &&			\
+		 (ugrid).fortran_record_remaining < 1 )			\
+	      {								\
+		printf("%s: %d: %s: not enough data %d %d left on record\n", \
+		       __FILE__,__LINE__,__func__,			\
+		       (ugrid).fortran_record_remaining,b);		\
+		return(1);						\
+	      }								\
+	    if ( 1 != fread(&(p[b]), 1, 1, (ugrid).file) )		\
+	      {								\
+		printf("%s: %d: %s: BINARY read \n",			\
+		       __FILE__,__LINE__,__func__);			\
+		return(1);						\
+	      }								\
+	    (ugrid).fortran_record_remaining -= 1;			\
 	  }								\
 	SWAP_DOUBLE(*double_ptr);					\
-	(ugrid).fortran_record_remaining -= 8;				\
       }									\
   }
 
