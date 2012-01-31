@@ -11,6 +11,8 @@ typedef struct UGRID UGRID;
 struct UGRID {
   FILE *file;
   enum ugrid_type type;
+  int fortran_record_size;
+  int fortran_record_remaining;
 };
 
 #if !defined(MIN)
@@ -32,6 +34,10 @@ struct UGRID {
 	return(try_code);						\
       }									\
   }
+
+#define ugrid_status( ugrid )						\
+  printf("record: %d of %d\n", (ugrid).fortran_record_remaining,	\
+	 (ugrid).fortran_record_size );
 
 #define SWAP_INT(x) { \
     int y; \
@@ -56,15 +62,37 @@ struct UGRID {
 	    return(1);							\
 	  }								\
 	SWAP_INT(fortran_record_size);					\
-	printf("fortran record size %d bytes\n",fortran_record_size);	\
+	printf("fortran record flag %d\n",fortran_record_size);		\
+	if ( ugrid.fortran_record_size == 0 )				\
+	  {								\
+	    printf("start of fortran record.\n");			\
+	    ugrid.fortran_record_size = fortran_record_size;		\
+	    ugrid.fortran_record_remaining = fortran_record_size;	\
+	  }								\
+	else								\
+	  {								\
+	    printf("end of fortran record.\n");				\
+	    if ( fortran_record_size != ugrid.fortran_record_size )	\
+	      {								\
+		printf("fortran record header and footer do not match.\n"); \
+		return(1);						\
+	      }								\
+	    if ( 0 != ugrid.fortran_record_remaining )			\
+	      {								\
+		printf("fortran record still has data at footer %d\n", \
+		       ugrid.fortran_record_remaining );		\
+		return(1);						\
+	      }								\
+	    ugrid.fortran_record_size = 0;				\
+	  }								\
       }									\
   }
 
 #define int_from_ugrid( ugrid, int_ptr)					\
   {									\
-    if ( ugrid.type == ascii )						\
+    if ( (ugrid).type == ascii )					\
       {									\
-	if ( 1 != fscanf(ugrid.file, "%d", (int_ptr)) )			\
+	if ( 1 != fscanf((ugrid).file, "%d", (int_ptr)) )		\
 	  {								\
 	    printf("%s: %d: %s: ASCII read \n",				\
 		   __FILE__,__LINE__,__func__);				\
@@ -73,13 +101,21 @@ struct UGRID {
       }									\
     else								\
       {									\
-	if ( 1 != fread((int_ptr), sizeof(int), 1, ugrid.file) )	\
+	if ( (ugrid).fortran_record_size > 0 &&				\
+	     (ugrid).fortran_record_remaining < 4 )			\
+	  {								\
+	    printf("%s: %d: %s: not enough data left on record\n",	\
+                   __FILE__,__LINE__,__func__);                         \
+	    return(1);							\
+	  }								\
+	if ( 1 != fread((int_ptr), sizeof(int), 1, (ugrid).file) )	\
 	  {								\
 	    printf("%s: %d: %s: BINARY read \n",			\
 		   __FILE__,__LINE__,__func__);				\
 	    return(1);							\
 	  }								\
 	SWAP_INT(*int_ptr);						\
+	(ugrid).fortran_record_remaining -= 4;				\
       }									\
   }
 
@@ -100,9 +136,9 @@ struct UGRID {
 
 #define double_from_ugrid( ugrid, double_ptr)				\
   {									\
-    if ( ugrid.type == ascii )						\
+    if ( (ugrid).type == ascii )					\
       {									\
-	if ( 1 != fscanf(ugrid.file, "%lf", (double_ptr)) )		\
+	if ( 1 != fscanf((ugrid).file, "%lf", (double_ptr)) )		\
 	  {								\
 	    printf("%s: %d: %s: ASCII read \n",				\
 		   __FILE__,__LINE__,__func__);				\
@@ -111,18 +147,26 @@ struct UGRID {
       }									\
     else								\
       {									\
-	if ( 1 != fread((double_ptr), sizeof(double), 1, ugrid.file) )	\
+        if ( (ugrid).fortran_record_size > 0 &&				\
+             (ugrid).fortran_record_remaining < 8)			\
+          {                                                             \
+            printf("%s: %d: %s: not enough data left on record\n",	\
+                   __FILE__,__LINE__,__func__);                         \
+	    return(1);							\
+          }                                                             \
+	if ( 1 != fread((double_ptr), sizeof(double), 1, (ugrid).file) ) \
 	  {								\
 	    printf("%s: %d: %s: BINARY read \n",			\
 		   __FILE__,__LINE__,__func__);				\
 	    return(1);							\
 	  }								\
 	SWAP_DOUBLE(*double_ptr);					\
+	(ugrid).fortran_record_remaining -= 8;				\
       }									\
   }
 
 
-int translate_ints( int nc, char *variable_name, UGRID ugrid )
+int translate_ints( int nc, char *variable_name, UGRID *ugrid )
 {
   int var;
   int var_ndim;
@@ -174,7 +218,7 @@ int translate_ints( int nc, char *variable_name, UGRID ugrid )
 
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
-	  int_from_ugrid( ugrid, &nodes[node]);
+	  int_from_ugrid( *ugrid, &nodes[node]);
 	  if ( nodes_per > 1 ) (nodes[node])--;
 	}
 
@@ -264,6 +308,8 @@ int main( int argc, char *argv[] )
     }
 
   ugrid.type = ascii;
+  ugrid.fortran_record_size = 0;
+  ugrid.fortran_record_remaining = 0;
 
   end_of_string = strlen(argv[1]);
 
@@ -275,7 +321,7 @@ int main( int argc, char *argv[] )
 
   if( strcmp(&(argv[1])[end_of_string-9],".r8.ugrid") == 0 ) 
     {
-      printf("big endian ofrtran unformatted by extension (.r8.ugrid)\n");
+      printf("big endian fortran unformatted by extension (.r8.ugrid)\n");
       ugrid.type = r8;
     }
 
@@ -384,14 +430,16 @@ int main( int argc, char *argv[] )
     }
   printf("grid points complete\n");
 
-  nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
-  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
+  ugrid_status( ugrid );
 
-  nc_try( translate_ints( nc, "points_of_tetraeders", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_pyramids", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_prisms", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_surfacetriangles", &ugrid ) );
+  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", &ugrid ) );
+  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", &ugrid ) );
+
+  nc_try( translate_ints( nc, "points_of_tetraeders", &ugrid ) );
+  nc_try( translate_ints( nc, "points_of_pyramids", &ugrid ) );
+  nc_try( translate_ints( nc, "points_of_prisms", &ugrid ) );
+  nc_try( translate_ints( nc, "points_of_hexaeders", &ugrid ) );
 
   skip_fortran_record_size_if_needed( ugrid )
 
