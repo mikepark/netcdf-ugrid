@@ -15,6 +15,9 @@ struct UGRID {
   int fortran_record_remaining;
 };
 
+#if !defined(ABS)
+#define ABS(a)   ((a)>0?(a):-(a))
+#endif
 #if !defined(MIN)
 #define MIN(a,b) ((a)<(b)?(a):(b)) 
 #endif
@@ -35,10 +38,6 @@ struct UGRID {
       }									\
   }
 
-#define ugrid_status( ugrid )						\
-  printf("record: %d of %d\n", (ugrid).fortran_record_remaining,	\
-	 (ugrid).fortran_record_size );
-
 #define SWAP_INT(x) { \
     int y; \
     char *xp = (char *)&(x); \
@@ -52,10 +51,10 @@ struct UGRID {
 
 #define skip_fortran_record_size_if_needed( ugrid )			\
   {									\
-    if ( ugrid.type == r8 )						\
+    if ( (ugrid).type == r8 )						\
       {									\
 	int fortran_record_size;					\
-	if ( 1 != fread(&fortran_record_size, sizeof(int), 1, ugrid.file) ) \
+	if ( 1 != fread(&fortran_record_size, sizeof(int), 1, (ugrid).file) ) \
 	  {								\
 	    printf("%s: %d: %s: BINARY read \n",			\
 		   __FILE__,__LINE__,__func__);				\
@@ -63,27 +62,27 @@ struct UGRID {
 	  }								\
 	SWAP_INT(fortran_record_size);					\
 	printf("fortran record flag %d\n",fortran_record_size);		\
-	if ( ugrid.fortran_record_size == 0 )				\
+	if ( (ugrid).fortran_record_size == 0 )				\
 	  {								\
 	    printf("start of fortran record.\n");			\
-	    ugrid.fortran_record_size = fortran_record_size;		\
-	    ugrid.fortran_record_remaining = fortran_record_size;	\
+	    (ugrid).fortran_record_size = fortran_record_size;		\
+	    (ugrid).fortran_record_remaining = ABS(fortran_record_size); \
 	  }								\
 	else								\
 	  {								\
 	    printf("end of fortran record.\n");				\
-	    if ( fortran_record_size != ugrid.fortran_record_size )	\
+	    if ( ABS(fortran_record_size) != ABS((ugrid).fortran_record_size) ) \
 	      {								\
 		printf("fortran record header and footer do not match.\n"); \
 		return(1);						\
 	      }								\
-	    if ( 0 != ugrid.fortran_record_remaining )			\
+	    if ( 0 != (ugrid).fortran_record_remaining )		\
 	      {								\
-		printf("fortran record still has data at footer %d\n", \
-		       ugrid.fortran_record_remaining );		\
+		printf("fortran record still has data at footer %d\n",	\
+		       (ugrid).fortran_record_remaining );		\
 		return(1);						\
 	      }								\
-	    ugrid.fortran_record_size = 0;				\
+	    (ugrid).fortran_record_size = 0;				\
 	  }								\
       }									\
   }
@@ -101,11 +100,18 @@ struct UGRID {
       }									\
     else								\
       {									\
-	if ( (ugrid).fortran_record_size > 0 &&				\
+	if ( (ugrid).fortran_record_size == -2147483639 &&		\
+	     (ugrid).fortran_record_remaining == 0 )			\
+	  {								\
+	    skip_fortran_record_size_if_needed( ugrid );		\
+	    skip_fortran_record_size_if_needed( ugrid );		\
+	  }								\
+	if ( (ugrid).fortran_record_size != 0 &&			\
 	     (ugrid).fortran_record_remaining < 4 )			\
 	  {								\
-	    printf("%s: %d: %s: not enough data left on record\n",	\
-                   __FILE__,__LINE__,__func__);                         \
+	    printf("%s: %d: %s: not enough data %d left on record\n",	\
+                   __FILE__,__LINE__,__func__,				\
+		   (ugrid).fortran_record_remaining);			\
 	    return(1);							\
 	  }								\
 	if ( 1 != fread((int_ptr), sizeof(int), 1, (ugrid).file) )	\
@@ -147,13 +153,20 @@ struct UGRID {
       }									\
     else								\
       {									\
-        if ( (ugrid).fortran_record_size > 0 &&				\
-             (ugrid).fortran_record_remaining < 8)			\
-          {                                                             \
-            printf("%s: %d: %s: not enough data left on record\n",	\
-                   __FILE__,__LINE__,__func__);                         \
+	if ( (ugrid).fortran_record_size == -2147483639 &&		\
+	     (ugrid).fortran_record_remaining == 0 )			\
+	  {								\
+	    skip_fortran_record_size_if_needed( ugrid );		\
+	    skip_fortran_record_size_if_needed( ugrid );		\
+	  }								\
+	if ( (ugrid).fortran_record_size != 0 &&			\
+	     (ugrid).fortran_record_remaining < 8 )			\
+	  {								\
+	    printf("%s: %d: %s: not enough data %d left on record\n",	\
+                   __FILE__,__LINE__,__func__,				\
+		   (ugrid).fortran_record_remaining);			\
 	    return(1);							\
-          }                                                             \
+	  }								\
 	if ( 1 != fread((double_ptr), sizeof(double), 1, (ugrid).file) ) \
 	  {								\
 	    printf("%s: %d: %s: BINARY read \n",			\
@@ -429,8 +442,6 @@ int main( int argc, char *argv[] )
       nc_try( nc_put_var1_double(nc, points_zc, index, &dp) );
     }
   printf("grid points complete\n");
-
-  ugrid_status( ugrid );
 
   nc_try( translate_ints( nc, "points_of_surfacetriangles", &ugrid ) );
   nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", &ugrid ) );
