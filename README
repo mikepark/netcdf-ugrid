@@ -1,9 +1,13 @@
 
 % netcdf-ugrid my-netcfd-grid-filename
 
-docs,
+ugrid format description:
 http://www.simcenter.msstate.edu/docs/solidmesh/ugridformat.html
 http://www.simcenter.msstate.edu/docs/solidmesh/ugridconnectivity.html
+
+fortran record when larger then 2 gigabytes:
+page 218 of
+http://software.intel.com/sites/products/documentation/hpc/compilerpro/en-us/fortran/lin/main_for_lin.pdf
 
 Todo
 
@@ -14,3 +18,4 @@ run configure ; make ; [make check] ; make install
 first attampt at
 
 http://tom.preston-werner.com/2010/08/23/readme-driven-development.html
+
