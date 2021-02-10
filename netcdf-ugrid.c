@@ -24,7 +24,7 @@
       }									\
   }
 
-int translate_dimension( int nc, char *variable_name, FILE *ugrid )
+int translate_dimension( int nc, char *variable_name, FILE *ugrid, int bin )
 {
   int var;
   int var_ndim;
@@ -57,12 +57,19 @@ int translate_dimension( int nc, char *variable_name, FILE *ugrid )
       length = (int)dim_length;
     }
 
-  fprintf(ugrid, " %d", length );
+  if ( bin )
+    {
+      nc_try( 1 != fwrite( &length, sizeof(length), 1, ugrid ) );
+    }
+  else
+    {
+      fprintf(ugrid, " %d", length );
+    }
 
   return 0;
 }
 
-int translate_nodes( int nc, FILE *ugrid )
+int translate_nodes( int nc, FILE *ugrid, int bin )
 {
   int var_x, var_y, var_z;
   int var_ndim;
@@ -92,16 +99,25 @@ int translate_nodes( int nc, FILE *ugrid )
       nc_try( nc_get_var1_double(nc, var_x, index, &x) );
       nc_try( nc_get_var1_double(nc, var_y, index, &y) );
       nc_try( nc_get_var1_double(nc, var_z, index, &z) );
-      fprintf(ugrid, " %25.15e", x );
-      fprintf(ugrid, " %25.15e", y );
-      fprintf(ugrid, " %25.15e", z );
-      fprintf(ugrid, "\n" );
+      if ( bin )
+	{
+	  nc_try( 1 != fwrite( &x, sizeof(x), 1, ugrid ) );
+	  nc_try( 1 != fwrite( &y, sizeof(y), 1, ugrid ) );
+	  nc_try( 1 != fwrite( &z, sizeof(z), 1, ugrid ) );
+	}
+      else
+	{
+	  fprintf(ugrid, " %25.15e", x );
+	  fprintf(ugrid, " %25.15e", y );
+	  fprintf(ugrid, " %25.15e", z );
+	  fprintf(ugrid, "\n" );
+	}
     }
 
   return 0;
 }
 
-int translate_ints( int nc, char *variable_name, FILE *ugrid )
+int translate_ints( int nc, char *variable_name, FILE *ugrid, int bin )
 {
   int var;
   int var_ndim;
@@ -205,9 +221,16 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
       for ( node = 0 ; node < nodes_per ; node++ )
 	{
-	  fprintf(ugrid, " %d", nodes[node] );
+	  if ( bin )
+	    {
+	      nc_try( 1 != fwrite( &(nodes[node]), sizeof(int), 1, ugrid ) );
+	    }
+	  else
+	    {
+	      fprintf(ugrid, " %d", nodes[node] );
+	    }
 	}
-      fprintf(ugrid, "\n" );
+      if ( !bin ) fprintf(ugrid, "\n" );
     }
 
   free( nodes );
@@ -221,6 +244,7 @@ int main( int argc, char *argv[] )
 {
   int nc;
   FILE *ugrid;
+  int bin = 1; /* 0 = ASCII format, 1 = binary format */
 
   if ( argc < 2 ) 
     {
@@ -230,29 +254,36 @@ int main( int argc, char *argv[] )
 
   nc_try( nc_open(argv[1], NC_NOWRITE, &nc) );
 
-  ugrid = fopen("netcdf.ugrid","w");
+  if ( bin )
+    {
+      ugrid = fopen("netcdf.lb8.ugrid","w");
+    }
+  else
+    {
+      ugrid = fopen("netcdf.ugrid","w");
+    }
 
-  nc_try( translate_dimension( nc, "points_xc", ugrid ) );
+  nc_try( translate_dimension( nc, "points_xc", ugrid, bin ) );
   
-  nc_try( translate_dimension( nc, "points_of_surfacetriangles", ugrid ) );
-  nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_surfacetriangles", ugrid, bin ) );
+  nc_try( translate_dimension( nc, "points_of_surfacequadrilaterals", ugrid, bin ) );
 
-  nc_try( translate_dimension( nc, "points_of_tetraeders", ugrid ) );
-  nc_try( translate_dimension( nc, "points_of_pyramids", ugrid ) );
-  nc_try( translate_dimension( nc, "points_of_prisms", ugrid ) );
-  nc_try( translate_dimension( nc, "points_of_hexaeders", ugrid ) );
+  nc_try( translate_dimension( nc, "points_of_tetraeders", ugrid, bin ) );
+  nc_try( translate_dimension( nc, "points_of_pyramids", ugrid, bin ) );
+  nc_try( translate_dimension( nc, "points_of_prisms", ugrid, bin ) );
+  nc_try( translate_dimension( nc, "points_of_hexaeders", ugrid, bin ) );
 
-  fprintf(ugrid, "\n");
+  if ( !bin ) fprintf(ugrid, "\n");
 
-  nc_try( translate_nodes( nc, ugrid ) );
+  nc_try( translate_nodes( nc, ugrid, bin ) );
 
-  nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid ) );
-  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_tetraeders", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_pyramids", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_prisms", ugrid ) );
-  nc_try( translate_ints( nc, "points_of_hexaeders", ugrid ) );
+  nc_try( translate_ints( nc, "points_of_surfacetriangles", ugrid, bin ) );
+  nc_try( translate_ints( nc, "points_of_surfacequadrilaterals", ugrid, bin ) );
+  nc_try( translate_ints( nc, "boundarymarker_of_surfaces", ugrid, bin ) );
+  nc_try( translate_ints( nc, "points_of_tetraeders", ugrid, bin ) );
+  nc_try( translate_ints( nc, "points_of_pyramids", ugrid, bin ) );
+  nc_try( translate_ints( nc, "points_of_prisms", ugrid, bin ) );
+  nc_try( translate_ints( nc, "points_of_hexaeders", ugrid, bin ) );
 
   fclose( ugrid );
 
