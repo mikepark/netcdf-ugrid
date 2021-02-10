@@ -192,7 +192,7 @@ int translate_ints( int nc, char *variable_name, FILE *ugrid )
 
       if ( strcmp("points_of_surfacequadrilaterals",variable_name) ==0 )
 	{
-	  int quad[3];
+	  int quad[4];
 	  quad[0] = nodes[3];
 	  quad[1] = nodes[2];
 	  quad[2] = nodes[1];
